@@ -93,3 +93,74 @@ There are many middleware bult in . [visit here](https://learn.microsoft.com/en-
 
 Your team lead tasked you to create a barebones website for your company. The website should display a welcome message on the main page, and display a brief history of the company on a separate /about page. A previous version of the app had the company history at the /history URL, so you need to redirect requests from /history to /about to maintain compatibility with existing links.
 
+You'll use the built-in MapGet method and UrlRewriter middleware to accomplish these tasks.
+
+```csharp
+
+app.UseRewriter(new RewriteOptions().AddRedirect("history", "about"));
+app.MapGet("/", () => "Welcome to Contoso!");
+app.MapGet("/about", () => "Contoso was founded in 2000.");
+
+```
+
+app.MapGet() maps an HTTP GET request to a specified path. This feature of ASP.NET Core is called *endpoint routing* . This code adds a branch to the pipeline. If the request path is /, the endpoint routing middleware routes the request to this endpoint, which then writes "Welcome to Contoso!" to the response.
+
+If the request path is /about, the endpoint writes "Our company was founded in 2000." to the response.
+
+Rewriter middleware component that redirects requests from /history to /about. The AddRedirect() method takes two parameters: a regular expression pattern to match the request path, and the replacement path to redirect to.
+
+
+### Exercise - Create a custom middleware
+Custom middleware can be inserted anywhere in the middleware pipeline and can be used with built-in middleware components
+
+<img src="DotNetWebApp/image/middleware-1.png">
+
+Your company's network operations team is troubleshooting performance issues in the production environment. Your team lead tasked you to implement some features to better support real-time monitoring of the app. The app should log request details to the console. For each request, it should log the request method, path, and response status code.
+
+Solution 
+
+```csharp
+app.Use(async (context, next) =>
+{
+    Console.WriteLine($"{context.Request.Method} {context.Request.Path} {context.Response.StatusCode}");
+    await next(); 
+});
+
+app.Run();
+```
+The app seems to work, but there's a problem. You requested the /history page, but the console output doesn't show it. This behavior is because the custom middleware component that logs request details was added after the URL rewriter middleware. The URL rewriter middleware redirects requests from /history to /about and sends the response, and the custom middleware component doesn't see the request. Let's fix this.
+
+```csharp
+
+using Microsoft.AspNetCore.Rewrite;
+
+var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
+
+app.Use(async (context, next) =>
+{
+    Console.WriteLine($"{context.Request.Method} {context.Request.Path} {context.Response.StatusCode}");
+    await next(); 
+});
+
+app.UseRewriter(new RewriteOptions().AddRedirect("history", "about"));
+
+app.MapGet("/", () => "Hello World!");
+app.MapGet("/about", () => "Contoso was founded in 2000.");
+
+app.Run();
+```
+
+The app is almost ready, but there's one more issue. The status code in the console output is always 200, even when the app redirects the request. The status code for the /history request should be a 302 redirect. The reason for this behavior is another order issue in which the middleware components are processed.
+
+```csharp
+app.Use(async (context, next) =>
+{
+    await next(); 
+    Console.WriteLine($"{context.Request.Method} {context.Request.Path} {context.Response.StatusCode}");
+});
+
+app.Run();
+```
+
+

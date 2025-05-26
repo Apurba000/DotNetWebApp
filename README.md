@@ -163,4 +163,74 @@ app.Use(async (context, next) =>
 app.Run();
 ```
 
+### Dependency injection and Inversion of Control (IoC)
+
+The dependency injection pattern is a form of Inversion of Control (IoC). In the dependency injection pattern, a component receives its dependencies from external sources rather than creating them itself. This pattern decouples the code from the dependency, which makes code easier to test and maintain. 
+
+Now Add these following code 
+
+```csharp
+
+using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
+using Microsoft.AspNetCore.Rewrite;
+using DotNetWebApp.Services;
+
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddSingleton<PersonService>();
+var app = builder.Build();
+
+app.MapGet("/", 
+    (PersonService personService) => 
+    {
+        return $"Hello, {personService.GetPersonName()}!";
+    }
+);
+app.Run();
+```
+```csharp
+namespace DotNetWebApp.Services;
+
+public class PersonService
+{
+    public string GetPersonName()
+    {
+        return "John Doe";
+    }
+}
+```
+
+Where does the delegate get the PersonService service? It's implicitly provided by the service container. The *builder.Services.AddSingleton<PersonService>()* line tells the service container to create a new instance of the PersonService class when the app starts, and to provide that instance to any component that needs it.
+
+### Interfaces and dependency injection
+
+To avoid dependencies on a specific service implementation, you can instead configure a service for a specific interface and then depend just on the interface. This approach gives you the flexibility to swap out the service implementation
+
+```csharp
+public interface IPersonService
+{
+    string GetPersonName();
+}
+
+// another file
+namespace DotNetWebApp.Services;
+public class PersonService : IPersonService
+{
+    public string GetPersonName()
+    {
+        return "John Doe";
+    }
+}
+
+// program.cs
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddSingleton<IPersonService, PersonService>();
+var app = builder.Build();
+
+app.MapGet("/", 
+    (IPersonService personService) => 
+    {
+        return $"Hello, {personService.GetPersonName()}!";
+    }
+);
+```
 

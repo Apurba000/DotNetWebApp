@@ -1,18 +1,16 @@
 
+using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
 using Microsoft.AspNetCore.Rewrite;
+using DotNetWebApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddSingleton<IPersonService, PersonService>();
 var app = builder.Build();
 
-app.Use(async (context, next) =>
-{
-    await next(); 
-    Console.WriteLine($"{context.Request.Method} {context.Request.Path} {context.Response.StatusCode}");
-});
-
-app.UseRewriter(new RewriteOptions().AddRedirect("history", "about"));
-
-app.MapGet("/", () => "Hello World!");
-app.MapGet("/about", () => "Contoso was founded in 2000.");
-
+app.MapGet("/", 
+    (IPersonService personService) => 
+    {
+        return $"Hello, {personService.GetPersonName()}!";
+    }
+);
 app.Run();

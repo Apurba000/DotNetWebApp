@@ -233,4 +233,71 @@ app.MapGet("/",
     }
 );
 ```
+Another example is "WelcomeService"
 
+### Service lifetimes
+There are three built-in lifetimes for services in ASP.NET Core:
+
+* Singleton
+* Scoped
+* Transient
+
+#### Singleton lifetime
+Services registered with a singleton lifetime are created once when the app starts and are reused for the lifetime of the app. This lifetime is useful for services that are expensive to create or that don't change often. For example, a service that reads configuration settings from a file can be registered as a singleton.
+
+Use the _AddSingleton_ method to add a singleton service to the service container.
+
+#### Scoped lifetime
+Services registered with a scoped lifetime are created once per configured scope, which ASP.NET Core sets up for each request. A scoped service in ASP.NET Core is typically created when a request is received and disposed of when the request is completed. This lifetime is useful for services that access request-specific data. For example, a service that fetches a customer's data from a database can be registered as a scoped service.
+
+Use the _AddScoped_ method to add a scoped service to the service container.
+
+#### Transient lifetime
+Services registered with a transient lifetime are created each time they're requested. This lifetime is useful for lightweight, stateless services. For example, a service that performs a specialized calculation can be registered as a transient service.
+
+Use the AddTransient method to add a transient service to the service container.
+
+#### Services that depend on other services
+A service can depend on other services, typically by having its dependencies injected through its constructor. When you register a service that depends on another service, you must take service lifetime into account. For example, a singleton services shouldn't depend on a scoped service because the scoped service is disposed of when the request is completed but a singleton lives for the lifetime of the app. Fortunately, ASP.NET Core will by default check for this misconfiguration and will report a scope validation error when the app starts up so the issue can be quickly identified and addressed.
+
+### Exercise : Scoped
+
+Add the AddScoped<> method to regsiter the servie, You will see in the browser every time changes time as per request . 
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddScoped<IWelcomeService, WelcomeService>();
+
+var app = builder.Build();
+
+app.MapGet("/", (IWelcomeService welcomeService) => welcomeService.GetWelcomeMessage());
+
+app.Run();
+```
+
+But if you change app.MapGet() method as following
+```csharp
+app.MapGet("/", async (IWelcomeService welcomeService1, IWelcomeService welcomeService2) => 
+    {
+        string message1 = $"Message1: {welcomeService1.GetWelcomeMessage()}";
+        string message2 = $"Message2: {welcomeService2.GetWelcomeMessage()}";
+        return $"{message1}\n{message2}";
+    });
+```
+
+ The service is created once per client request, and the same instance is provided to all components that need it during the same request. welcomeService1 and welcomeService2 are both references to the same instance of the WelcomeService service.
+
+ Refresh the page a few times. Observe that the timestamp and GUID in the welcome messages change each time, but the two messages are always identical.
+
+
+ ### Exercise : Transient 
+
+ Change the registration of the WelcomeService service to use the transient service lifetime:
+
+ ```csharp
+ builder.Services.AddTransient<IWelcomeService, WelcomeService>();
+ ```
+
+ This behavior is representative of the transient service lifetime. Every time the service is injected into a component, a new instance of the service is created. Since it's injected into the delegate twice, two instances of the service are created.
+
+ [Visit here for more](https://learn.microsoft.com/en-us/training/modules/configure-dependency-injection/7-summary)

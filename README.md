@@ -301,3 +301,7 @@ app.MapGet("/", async (IWelcomeService welcomeService1, IWelcomeService welcomeS
  This behavior is representative of the transient service lifetime. Every time the service is injected into a component, a new instance of the service is created. Since it's injected into the delegate twice, two instances of the service are created.
 
  [Visit here for more](https://learn.microsoft.com/en-us/training/modules/configure-dependency-injection/7-summary)
+
+ ### Publish the App 
+
+[Visit here](https://learn.microsoft.com/en-us/training/modules/publish-aspnetcore-app/)
